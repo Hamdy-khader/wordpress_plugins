@@ -30,8 +30,10 @@ import glob
 import commands
 import lxml.etree as ET
 from distutils.version import LooseVersion
+import shutil
 
 wordpress_install_dir = '/home/lamp/wordpress'
+#wordpress_install_dir = '.'
 #wordpress_user = 'www-data'
 
 #run_cmd()
@@ -70,7 +72,7 @@ def get_svn_info(tree):
         print '  no svn url found'
         return failure
 
-    print '  ', url.text
+    print 'url:  ', url.text
 
     usesTag = True
     if url.text.startswith('http://themes.svn.wordpress.org'):
@@ -170,7 +172,26 @@ def switch_to_svn_tag(tree, repo_url, tag):
 #    run_cmd(cmd)
 
 #update_svn_trees()
-#_______________________________________________________________________________
+
+tmpDir = os.path.expanduser("~") + "/tmpsvn"
+
+def get_readme_version(tree, repo_url):
+    if(os.path.exists(tmpDir)):
+        shutil.rmtree(tmpDir)
+    os.mkdir(tmpDir)
+
+    cmd = 'svn co --depth files ' + commands.mkarg(repo_url) + "/trunk" + commands.mkarg(tmpDir)
+    run_cmd(cmd)
+
+    readmefile = '%s/readme.txt' % tmpDir
+
+    if os.path.isfile(readmefile):
+        f = open(readmefile, 'r')
+        m = re.search("Stable tag: ([\d\.]+)", f.read())
+        if (m) :
+            return m.group(1)
+
+#____________________________________________________________________________
 def update_svn_trees(trees):
     '''
     updates svn trees to the latest tag
@@ -191,22 +212,26 @@ def update_svn_trees(trees):
         print '  current tag is %s (revision %d)' % (current_tag, current_rev)
         print '  repo url is %s' % repo_url
 
-        newest_rev, newest_tag = get_newest_svn_tag(repo_url)
-        if newest_tag is None:
-            print '  getting newest tag failed!'
-            continue
-        print '  newest tag is %s (revision %d)' % (newest_tag, newest_rev)
+        newest_tag = get_readme_version(tree, repo_url);
 
-        if LooseVersion(newest_tag) > LooseVersion(current_tag):
-            switch_to_svn_tag(tree, repo_url, newest_tag)
+        # newest_rev, newest_tag = get_newest_svn_tag(repo_url)
+        if newest_tag is None:
+            print '  getting stable tag failed!'
+            continue
+        # print '  newest tag is %s (revision %d)' % (newest_tag, newest_rev)
+        print '  stable tag found from readme.txt: ', newest_tag
+
+        if LooseVersion(newest_tag) != LooseVersion(current_tag):
+            switch_to_svn_tag(tree, repo_url, newest_tags)
+
 
 # main()
 #_______________________________________________________________________________
 
 uid = os.getuid()
 if 0 != uid:
-    print 'This script must be run as root!'
-    sys.exit(-1)
+   print 'This script must be run as root!'
+   sys.exit(-1)
 
 plugins = glob.glob('%s/plugins/*' % wordpress_install_dir)
 update_svn_trees(plugins)
