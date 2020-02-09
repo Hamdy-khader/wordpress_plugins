@@ -215,7 +215,7 @@ def update_svn_trees(trees):
 
         repo_url, current_tag, current_rev = get_svn_info(tree)
         if current_tag is None:
-            current_tag = "trunk"
+            continue;
 
         print '  current tag is %s (revision %d)' % (current_tag, current_rev)
         #print '  repo url is %s' % repo_url
