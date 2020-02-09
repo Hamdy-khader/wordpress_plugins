@@ -72,7 +72,7 @@ def get_svn_info(tree):
         print '  no svn url found'
         return failure
 
-    print 'url:  ', url.text
+    print '  url:  ', url.text
 
     usesTag = True
     if url.text.startswith('http://themes.svn.wordpress.org'):
@@ -95,15 +95,15 @@ def get_svn_info(tree):
         return failure
 
     repo_url = m.group(1)
+
     if not usesTag:
-        trunk_url = repo_url+'/trunk'
-        cmd = 'svn update ' + commands.mkarg(tree)
+        trunk_url = repo_url + '/trunk'
+        cmd = '  svn update ' + commands.mkarg(tree)
         print cmd
         run_cmd(cmd)
-        return None, None, None
-
-    current_tag = m.group(2)
-
+        current_tag = "trunk"
+    else :
+        current_tag = m.group(2)
 
     commit = entry.find('commit')
     if commit is None:
@@ -168,6 +168,14 @@ def switch_to_svn_tag(tree, repo_url, tag):
     cmd = 'svn switch --ignore-ancestry ' + commands.mkarg(tag_url) + commands.mkarg(tree)
     run_cmd(cmd)
 
+def switch_to_svn_trunk(tree, repo_url):
+
+    trunk_url = repo_url + "/trunk"
+    print '  switching repo to trunk %s' % trunk_url
+
+    cmd = 'svn switch --ignore-ancestry ' + commands.mkarg(trunk_url) + commands.mkarg(tree)
+    run_cmd(cmd)
+
 #    cmd = 'chown -R' + commands.mkarg(wordpress_user) + commands.mkarg(tree)
 #    run_cmd(cmd)
 
@@ -187,7 +195,7 @@ def get_readme_version(tree, repo_url):
 
     if os.path.isfile(readmefile):
         f = open(readmefile, 'r')
-        m = re.search("Stable tag: ([\d\.]+)", f.read())
+        m = re.search("Stable tag: ([\w.]+)", f.read())
         if (m) :
             return m.group(1)
 
@@ -207,10 +215,10 @@ def update_svn_trees(trees):
 
         repo_url, current_tag, current_rev = get_svn_info(tree)
         if current_tag is None:
-            continue
+            current_tag = "trunk"
 
         print '  current tag is %s (revision %d)' % (current_tag, current_rev)
-        print '  repo url is %s' % repo_url
+        #print '  repo url is %s' % repo_url
 
         newest_tag = get_readme_version(tree, repo_url);
 
@@ -222,7 +230,10 @@ def update_svn_trees(trees):
         print '  stable tag found from readme.txt: ', newest_tag
 
         if LooseVersion(newest_tag) != LooseVersion(current_tag):
-            switch_to_svn_tag(tree, repo_url, newest_tags)
+            if (newest_tag == "trunk") :
+                switch_to_svn_trunk(tree, repo_url)
+            else:
+                switch_to_svn_tag(tree, repo_url, newest_tag)
 
 
 # main()
