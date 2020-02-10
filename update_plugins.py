@@ -41,7 +41,7 @@ wordpress_install_dir = '/home/lamp/wordpress'
 def run_cmd(cmd):
     status, output = commands.getstatusoutput(cmd)
     if 0 != status:
-        print "cmd %s failed with status code %d" % (cmd, status)
+        print "  > cmd %s failed with status code %d" % (cmd, status)
         sys.exit(-1)
 
     return output
@@ -224,16 +224,22 @@ def update_svn_trees(trees):
 
         # newest_rev, newest_tag = get_newest_svn_tag(repo_url)
         if newest_tag is None:
-            print '  getting stable tag failed!'
-            continue
-        # print '  newest tag is %s (revision %d)' % (newest_tag, newest_rev)
-        print '  stable tag found from readme.txt: ', newest_tag
+            print '  stable tag not found from readme! falling back to trunk ...'
+            newest_tag = "trunk"
+        else :
+            print '  stable tag found from readme.txt: ', newest_tag
 
         if LooseVersion(newest_tag) != LooseVersion(current_tag):
             if (newest_tag == "trunk") :
                 switch_to_svn_trunk(tree, repo_url)
             else:
-                switch_to_svn_tag(tree, repo_url, newest_tag)
+                try:
+                    switch_to_svn_tag(tree, repo_url, newest_tag)
+                except :
+                    print '  failed to switch to tag %s, falling back to trunk ... ' % newest_tag
+                    if (current_tag != "trunk") :
+                        switch_to_svn_trunk(tree, repo_url)
+
 
 
 # main()
