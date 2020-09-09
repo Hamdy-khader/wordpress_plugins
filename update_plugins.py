@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 import shutil
 
 wordpress_install_dir = '/home/lamp/wordpress'
+updated = False
 #wordpress_install_dir = '.'
 #wordpress_user = 'www-data'
 
@@ -167,6 +168,7 @@ def switch_to_svn_tag(tree, repo_url, tag):
 
     cmd = 'svn switch --ignore-ancestry ' + commands.mkarg(tag_url) + commands.mkarg(tree)
     run_cmd(cmd)
+    updated = True
 
 def switch_to_svn_trunk(tree, repo_url):
 
@@ -175,6 +177,7 @@ def switch_to_svn_trunk(tree, repo_url):
 
     cmd = 'svn switch --ignore-ancestry ' + commands.mkarg(trunk_url) + commands.mkarg(tree)
     run_cmd(cmd)
+    updated = True
 
 #    cmd = 'chown -R' + commands.mkarg(wordpress_user) + commands.mkarg(tree)
 #    run_cmd(cmd)
@@ -255,3 +258,7 @@ update_svn_trees(plugins)
 
 themes = glob.glob('%s/themes/*' % wordpress_install_dir)
 update_svn_trees(themes)
+if updated:
+        print " reload php7.3-fpm"
+        run_cmd("service php7.3-fpm reload")
+
