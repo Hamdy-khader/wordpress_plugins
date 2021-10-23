@@ -261,6 +261,6 @@ update_svn_trees(plugins)
 themes = glob.glob('%s/themes/*' % wordpress_install_dir)
 update_svn_trees(themes)
 if updated:
-    print " restarting php7.3-fpm"
-    run_cmd("service php7.3-fpm restart")
+    print " reload php7.3-fpm"
+    run_cmd("service php7.3-fpm reload")
 
