@@ -43,7 +43,7 @@ def run_cmd(cmd):
     status, output = commands.getstatusoutput(cmd)
     if 0 != status:
         print "  > cmd %s failed with status code %d" % (cmd, status)
-        sys.exit(-1)
+        print "  > %s" % output
 
     return output
 
@@ -76,12 +76,12 @@ def get_svn_info(tree):
     print '  url:  ', url.text
 
     usesTag = True
-    if url.text.startswith('http://themes.svn.wordpress.org'):
-        m = re.match('(http://themes.svn.wordpress.org/(?:\S+?))/(\S+)', url.text)
-    elif url.text.startswith('http://plugins.svn.wordpress.org'):
-        m = re.match('(http://plugins.svn.wordpress.org/(?:\S+?))/tags/(\S+)', url.text)
+    if url.text.startswith('http://themes.svn.wordpress.org') or url.text.startswith('https://themes.svn.wordpress.org'):
+        m = re.match('(http[s]?://themes.svn.wordpress.org/(?:\S+?))/(\S+)', url.text)
+    elif url.text.startswith('http://plugins.svn.wordpress.org') or url.text.startswith('https://plugins.svn.wordpress.org'):
+        m = re.match('(http[s]?://plugins.svn.wordpress.org/(?:\S+?))/tags/(\S+)', url.text)
         if m is None:
-            m = re.match('(http://plugins.svn.wordpress.org/(?:\S+?))/trunk', url.text)
+            m = re.match('(http[s]?://plugins.svn.wordpress.org/(?:\S+?))/trunk', url.text)
             usesTag = False
 
     else:
@@ -125,7 +125,7 @@ def get_newest_svn_tag(repo_url):
 
     tag_url = repo_url
     #print '  ', tag_url
-    if repo_url.startswith('http://plugins.svn.wordpress.org'):
+    if repo_url.startswith('http://plugins.svn.wordpress.org') or repo_url.startswith('https://plugins.svn.wordpress.org'):
         tag_url += '/tags'
         #print '  ', tag_url
 
@@ -159,9 +159,10 @@ def get_newest_svn_tag(repo_url):
 #switch_to_svn_tag()
 #_______________________________________________________________________________
 def switch_to_svn_tag(tree, repo_url, tag):
+    global updated
     print '  switching repo to tag %s' % tag
 
-    if repo_url.startswith('http://themes.svn.wordpress.org'):
+    if repo_url.startswith('http://themes.svn.wordpress.org') or repo_url.startswith('https://themes.svn.wordpress.org'):
         tag_url = repo_url+'/'+tag
     else:
         tag_url = repo_url+'/tags/'+tag
@@ -171,7 +172,7 @@ def switch_to_svn_tag(tree, repo_url, tag):
     updated = True
 
 def switch_to_svn_trunk(tree, repo_url):
-
+    global updated
     trunk_url = repo_url + "/trunk"
     print '  switching repo to trunk %s' % trunk_url
 
@@ -238,7 +239,8 @@ def update_svn_trees(trees):
             else:
                 try:
                     switch_to_svn_tag(tree, repo_url, newest_tag)
-                except :
+                except Exception as e:
+                    print(e)
                     print '  failed to switch to tag %s, falling back to trunk ... ' % newest_tag
                     if (current_tag != "trunk") :
                         switch_to_svn_trunk(tree, repo_url)
@@ -259,6 +261,6 @@ update_svn_trees(plugins)
 themes = glob.glob('%s/themes/*' % wordpress_install_dir)
 update_svn_trees(themes)
 if updated:
-        print " reload php7.3-fpm"
-        run_cmd("service php7.3-fpm reload")
+    print " restarting php7.3-fpm"
+    run_cmd("service php7.3-fpm restart")
 
