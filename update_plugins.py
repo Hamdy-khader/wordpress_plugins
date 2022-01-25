@@ -168,7 +168,10 @@ def switch_to_svn_tag(tree, repo_url, tag):
         tag_url = repo_url+'/tags/'+tag
 
     cmd = 'svn switch --ignore-ancestry ' + commands.mkarg(tag_url) + commands.mkarg(tree)
-    run_cmd(cmd)
+    status, output = commands.getstatusoutput(cmd)
+    if status != 0:
+        print "  > cmd %s failed with status code %d" % (cmd, status)
+        raise Exception(output)
     updated = True
 
 def switch_to_svn_trunk(tree, repo_url):
