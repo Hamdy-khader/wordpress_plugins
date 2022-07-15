@@ -266,4 +266,4 @@ update_svn_trees(themes)
 if updated:
     print " reload php7.3-fpm"
     run_cmd("service php7.3-fpm reload")
-
+    run_cmd("service php8.0-fpm reload")
