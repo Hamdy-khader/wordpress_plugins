@@ -32,6 +32,8 @@ import lxml.etree as ET
 from distutils.version import LooseVersion
 import shutil
 
+import requests
+
 wordpress_install_dir = '/home/lamp/wordpress'
 updated = False
 #wordpress_install_dir = '.'
@@ -206,6 +208,22 @@ def get_readme_version(tree, repo_url):
         if (m) :
             return m.group(1)
 
+
+def get_latest_theme_version(repo_url):
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.request("GET", repo_url, headers=headers)
+    if response.status_code == 200:
+        et = ET.HTML(response.text)
+        try:
+            ver = et[1][1][-1][0].text.replace("/", "")
+            ver = ver.strip()
+            print 'Latest version: %s' % ver
+            return ver
+        except:
+            pass
+    else:
+        print "URL error: %s, %s" % (response.status_code, repo_url)
+
 #____________________________________________________________________________
 def update_svn_trees(trees):
     '''
@@ -227,26 +245,36 @@ def update_svn_trees(trees):
         print '  current tag is %s (revision %d)' % (current_tag, current_rev)
         #print '  repo url is %s' % repo_url
 
-        newest_tag = get_readme_version(tree, repo_url);
-
-        # newest_rev, newest_tag = get_newest_svn_tag(repo_url)
-        if newest_tag is None:
-            print '  stable tag not found from readme! falling back to trunk ...'
-            newest_tag = "trunk"
-        else :
-            print '  stable tag found from readme.txt: ', newest_tag
-
-        if LooseVersion(newest_tag) != LooseVersion(current_tag):
-            if (newest_tag == "trunk") :
-                switch_to_svn_trunk(tree, repo_url)
-            else:
+        if "themes.svn.wordpress.org" in repo_url:
+            newest_tag = get_latest_theme_version(repo_url)
+            if newest_tag is None:
+                print 'Can not get latest tag, skip'
+                continue
+            if LooseVersion(newest_tag) != LooseVersion(current_tag):
+                print 'New version found!, %s, %s' % (repo_url, newest_tag)
                 try:
                     switch_to_svn_tag(tree, repo_url, newest_tag)
                 except Exception as e:
                     print(e)
-                    print '  failed to switch to tag %s, falling back to trunk ... ' % newest_tag
-                    if (current_tag != "trunk") :
-                        switch_to_svn_trunk(tree, repo_url)
+        else:
+            newest_tag = get_readme_version(tree, repo_url)
+            if newest_tag is None:
+                print '  stable tag not found from readme! falling back to trunk ...'
+                newest_tag = "trunk"
+            else :
+                print '  stable tag found from readme.txt: ', newest_tag
+
+            if LooseVersion(newest_tag) != LooseVersion(current_tag):
+                if (newest_tag == "trunk") :
+                    switch_to_svn_trunk(tree, repo_url)
+                else:
+                    try:
+                        switch_to_svn_tag(tree, repo_url, newest_tag)
+                    except Exception as e:
+                        print(e)
+                        print '  failed to switch to tag %s, falling back to trunk ... ' % newest_tag
+                        if (current_tag != "trunk") :
+                            switch_to_svn_trunk(tree, repo_url)
 
 
 
